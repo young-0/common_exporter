@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -25,16 +26,26 @@ type threadStruct struct {
 	localPort      int    // local exporter process running port
 	lastScrapeTime int64  // last scrape time
 }
+
 type HandleFnc func(writer http.ResponseWriter, request *http.Request)
 
 var (
 	threadList map[string]*threadStruct = make(map[string]*threadStruct) // store slave process info
 	paramList  seqStringFlag                                             // slave exporter params list
 
+	version             = flag.Bool("version", false, "Print mtail version information.")
 	bindAddr            = flag.String("bind-addr", ":8080", "master bind address for the metrics server")
 	binFile             = flag.String("exporter-bin-file", "", "slave exporter bin file addr, like /bin/kafka_exporter")
 	exporterMonitorAddr = flag.String("exporter-monitor-addr", "", "slave exporter monitor addr, like \"--es.uri=http://%s\", %s is target ip:port")
 	exporterListenAddr  = flag.String("exporter-listen-addr", "--web.listen-address=:%d", "slave exporter listen addr, like \"--web.listen-address=:%d\", %d is listen port")
+
+	// Branch as well as Version and Revision identifies where in the git
+	// history the build came from, as supplied by the linker when copmiled
+	// with `make'.  The defaults here indicate that the user did not use
+	// `make' as instructed.
+	Branch   string = "invalid:-use-make-to-build"
+	Version  string = "invalid:-use-make-to-build"
+	Revision string = "invalid:-use-make-to-build"
 )
 
 func init() {
@@ -42,7 +53,17 @@ func init() {
 }
 
 func main() {
+	buildInfo := BuildInfo{
+		Branch:   Branch,
+		Version:  Version,
+		Revision: Revision,
+	}
+
 	flag.Parse()
+	if *version {
+		fmt.Println(buildInfo.String())
+		os.Exit(0)
+	}
 	if *binFile == "" || *exporterMonitorAddr == "" {
 		flag.PrintDefaults()
 		os.Exit(1)
@@ -237,4 +258,21 @@ func (f *seqStringFlag) Set(value string) error {
 		*f = append(*f, v)
 	}
 	return nil
+}
+
+type BuildInfo struct {
+	Branch   string
+	Version  string
+	Revision string
+}
+
+func (b BuildInfo) String() string {
+	return fmt.Sprintf(
+		"common_exporter version %s git revision %s go version %s go arch %s go os %s",
+		b.Version,
+		b.Revision,
+		runtime.Version(),
+		runtime.GOARCH,
+		runtime.GOOS,
+	)
 }
