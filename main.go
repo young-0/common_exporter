@@ -17,6 +17,7 @@ import (
 	"os/signal"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -32,6 +33,7 @@ type HandleFnc func(writer http.ResponseWriter, request *http.Request)
 var (
 	threadList map[string]*threadStruct = make(map[string]*threadStruct) // store slave process info
 	paramList  seqStringFlag                                             // slave exporter params list
+	waitgroup  sync.WaitGroup
 
 	version             = flag.Bool("version", false, "Print mtail version information.")
 	bindAddr            = flag.String("bind-addr", ":8080", "master bind address for the metrics server")
@@ -98,8 +100,9 @@ func main() {
 			log.Infof("Stopping slave process: %s", target)
 		}
 		processClearClosed <- 0
-		close(idleConnsClosed)
+		waitgroup.Wait()
 		log.Info("See you next time!")
+		close(idleConnsClosed)
 	}()
 	go ProcessClear(&threadList, processClearClosed)
 	log.Infoln("Start main process")
@@ -181,7 +184,9 @@ func exporterThread(target string, port int, ctx *context.Context) {
 	cmd := exec.CommandContext(*ctx, *binFile, params...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	waitgroup.Add(1)
 	err := cmd.Run()
+	waitgroup.Done()
 	if err != nil {
 		log.Errorln("Execute Command failed:" + err.Error())
 		return
@@ -196,6 +201,7 @@ func ProcessClear(threadList *map[string]*threadStruct, quit chan int) {
 	d := time.Duration(time.Minute * 2)
 	t := time.NewTicker(d)
 	defer t.Stop()
+	waitgroup.Add(1)
 	for {
 		select {
 		case <-t.C:
@@ -218,6 +224,7 @@ func ProcessClear(threadList *map[string]*threadStruct, quit chan int) {
 			}
 		case <-quit:
 			log.Info("Stopping ProcessClear manager....")
+			waitgroup.Done()
 			return
 		}
 	}
