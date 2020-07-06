@@ -1,0 +1,148 @@
+    scrape_configs:
+    - job_name: mongodb-exporter
+      honor_timestamps: true
+      scrape_interval: 1m
+      scrape_timeout: 10s
+      metrics_path: /scrape
+      scheme: http
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        separator: ;
+        regex: mongo-port
+        replacement: $1
+        action: keep
+      - source_labels: [__address__]
+        separator: ;
+        regex: (.*)
+        target_label: __param_target
+        replacement: $1
+        action: replace
+      - source_labels: [__param_target]
+        target_label: instance
+      - separator: ;
+        regex: (.*)
+        target_label: __address__
+        replacement: mongodb-exporter:8080
+        action: replace
+      - separator: ;
+        regex: __meta_kubernetes_pod_label_(.+)
+        replacement: $1
+        action: labelmap
+      - source_labels: [__meta_kubernetes_namespace]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_namespace
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_pod_name]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_name
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_pod_ip]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_pod_ip
+        replacement: $1
+        action: replace
+    - job_name: elasticsearch-exporter
+      honor_timestamps: true
+      scrape_interval: 1m
+      scrape_timeout: 10s
+      metrics_path: /scrape
+      scheme: http
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        separator: ;
+        regex: tcp-9200
+        replacement: $1
+        action: keep
+      - source_labels: [__address__]
+        separator: ;
+        regex: (.*)
+        target_label: __param_target
+        replacement: $1
+        action: replace
+      - source_labels: [__param_target]
+        target_label: instance
+      - separator: ;
+        regex: (.*)
+        target_label: __address__
+        replacement: elasticsearch-exporter:8080
+        action: replace
+      - separator: ;
+        regex: __meta_kubernetes_pod_label_(.+)
+        replacement: $1
+        action: labelmap
+      - source_labels: [__meta_kubernetes_namespace]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_namespace
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_pod_name]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_name
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_pod_ip]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_pod_ip
+        replacement: $1
+        action: replace
+    - job_name: kafka-exporter
+      honor_timestamps: true
+      scrape_interval: 1m
+      scrape_timeout: 10s
+      metrics_path: /scrape
+      scheme: http
+      kubernetes_sd_configs:
+      - role: endpoints
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_endpoint_port_name]
+        separator: ;
+        regex: kafka-port
+        replacement: $1
+        action: keep
+      - source_labels: [__address__]
+        separator: ;
+        regex: (.*)
+        target_label: __param_target
+        replacement: $1
+        action: replace
+      - source_labels: [__param_target]
+        target_label: instance
+      - separator: ;
+        regex: (.*)
+        target_label: __address__
+        replacement: kafka-exporter:8080
+        action: replace
+      - separator: ;
+        regex: __meta_kubernetes_pod_label_(.+)
+        replacement: $1
+        action: labelmap
+      - source_labels: [__meta_kubernetes_namespace]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_namespace
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_pod_name]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_name
+        replacement: $1
+        action: replace
+      - source_labels: [__meta_kubernetes_pod_ip]
+        separator: ;
+        regex: (.*)
+        target_label: kubernetes_pod_ip
+        replacement: $1
+        action: replace

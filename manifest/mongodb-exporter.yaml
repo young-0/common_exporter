@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-exporter
+spec:
+  ports:
+  - name: http
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app.kubernetes.io/name: prometheus-mongodb-exporter
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus-mongodb-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus-mongodb-exporter
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: mongodb-exporter
+          image: dockeryounger123/common_exporter:v1.1_mongodb_v0.11.0
+          command:
+            - /common_exporter
+            - -logtostderr
+            - -v=2
+            - -exporter-bin-file=/mongodb_exporter
+            - -exporter-listen-addr=--web.listen-address=:%d
+            - -exporter-monitor-addr=--mongodb.uri=mongodb://MONITOR_USER:MONITOR_PASS@%s
+            - -params=--collect.collection
+            - -params=--collect.database
+            - -params=--collect.indexusage
+            - -params=--collect.topmetrics
+            - -params=--collect.connpoolstats
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 10m
+              memory: 10Mi
